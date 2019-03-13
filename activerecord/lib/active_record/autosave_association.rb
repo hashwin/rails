@@ -262,8 +262,12 @@ module ActiveRecord
 
     # Returns whether or not this record has been changed in any way (including whether
     # any of its nested autosave associations are likewise changed)
-    def changed_for_autosave?
-      new_record? || has_changes_to_save? || marked_for_destruction? || nested_records_changed_for_autosave?
+    def changed_for_autosave?(target = nil)
+      return true if new_record? || has_changes_to_save? || marked_for_destruction?
+
+      return false if target.present? && target.new_record? && saved_changes.present?
+
+      return nested_records_changed_for_autosave?
     end
 
     private
@@ -476,7 +480,7 @@ module ActiveRecord
             self[reflection.foreign_key] = nil
             record.destroy
           elsif autosave != false
-            saved = record.save(validate: !autosave) if record.new_record? || (autosave && record.changed_for_autosave?)
+            saved = record.save(validate: !autosave) if record.new_record? || (autosave && record.changed_for_autosave?(self))
 
             if association.updated?
               association_id = record.send(reflection.options[:primary_key] || :id)
