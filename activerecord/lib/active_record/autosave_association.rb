@@ -130,6 +130,8 @@ module ActiveRecord
   module AutosaveAssociation
     extend ActiveSupport::Concern
 
+    attr_reader :autosave_source
+
     module AssociationBuilderExtension #:nodoc:
       def self.build(model, reflection)
         model.send(:add_autosave_association_callbacks, reflection)
@@ -264,8 +266,13 @@ module ActiveRecord
     # any of its nested autosave associations are likewise changed)
     def changed_for_autosave?(target = nil)
       return true if new_record? || has_changes_to_save? || marked_for_destruction?
-      
-      return false if target.present? && saved_changes.present?
+
+      if target.present?
+        puts "#{target.class.name} #{saved_changes}"
+        if saved_changes.present?
+          return false 
+        end
+      end
 
       return nested_records_changed_for_autosave?
     end
@@ -406,13 +413,12 @@ module ActiveRecord
                   saved = association.insert_record(record, false)
                 elsif !reflection.nested?
                   association_saved = association.insert_record(record)
-
                   if reflection.validate?
                     errors.add(reflection.name) unless association_saved
                     saved = association_saved
                   end
                 end
-              elsif autosave
+              elsif autosave && changes.present?
                 saved = record.save(validate: false)
               end
 
