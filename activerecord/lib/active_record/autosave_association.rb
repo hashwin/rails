@@ -267,12 +267,7 @@ module ActiveRecord
     def changed_for_autosave?(target = nil)
       return true if new_record? || has_changes_to_save? || marked_for_destruction?
 
-      if target.present?
-        puts "#{target.class.name} #{saved_changes}"
-        if saved_changes.present?
-          return false 
-        end
-      end
+      return false if target.present? && saved_changes.present?
 
       return nested_records_changed_for_autosave?
     end
